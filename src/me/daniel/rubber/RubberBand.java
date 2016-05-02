@@ -29,6 +29,13 @@ public class RubberBand extends JPanel implements MouseListener, MouseMotionList
 	
 	private Rectangle theBox;
 	
+	private static Color[] colors;
+	static {
+		colors = new Color[] {
+			Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.ORANGE, Color.CYAN, Color.MAGENTA,	
+		};
+	}
+	
 	public RubberBand(int w, int h) {
 		setSize(w, h); //ensure proper size
 		//try to load the folder icon, otherwise flag useIcon as false.
@@ -44,10 +51,30 @@ public class RubberBand extends JPanel implements MouseListener, MouseMotionList
 			int x = r.nextInt(getWidth()-20) + 10;
 			int y = r.nextInt(getHeight()-20) + 10;
 			getCoords(x, y);
-			nodes.put(new Node(x, y), new Rectangle(x-4, y-4, x+16, y+16));
+			int ind = r.nextInt(colors.length);
+			Node n = new Node(x, y, replaceColor(icon, Color.WHITE.getRGB(), colors[ind].getRGB()));
+			nodes.put(n, new Rectangle(x-4, y-4, 20, 20));
 		}
 	}
 
+	private BufferedImage replaceColor(BufferedImage original, int replace, int with) {
+		int w = original.getWidth();
+		int h = original.getHeight();
+		
+		BufferedImage newImg = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+		for(int i = 0; i < w; i++) {
+			for(int j = 0; j < h; j++) {
+				int col = original.getRGB(i, j);
+				if(col == replace) {
+					newImg.setRGB(i, j, with);
+				} else {
+					newImg.setRGB(i, j, col);
+				}
+			}
+		}
+		return newImg;
+	}
+	
 	@Override
 	public void paintComponent(Graphics g) {
 		//clear the screen
@@ -56,9 +83,10 @@ public class RubberBand extends JPanel implements MouseListener, MouseMotionList
 		for(Node n : nodes.keySet()) {
 			//draw the node, if icon failed to load, we'll just draw a circle instead.
 			if(useIcon) {
-				g.drawImage(icon, n.x, n.y, 16, 16, null);
+				g.drawImage(n.getIcon(), n.x, n.y, 16, 16, null);
 			} else {
-				g.drawOval(n.x, n.y, n.x+16, n.y+16);
+				g.setColor(Color.WHITE);
+				g.drawOval(n.x, n.y, 16, 16);
 			}
 			//the node is selected, draw the special stuff.
 			if(n.isSelected()) {
@@ -90,7 +118,6 @@ public class RubberBand extends JPanel implements MouseListener, MouseMotionList
 		if(haveMouse) {
 			curX = e.getX()-lastX-8; //subtraction because wonky getX() and getY() :(
 			curY = e.getY()-lastY-30;
-//			System.out.println(getCoords(curX, curY));
 			theBox = new Rectangle(lastX, lastY, curX, curY); //create the selection rectangle to use in checking interestions
 			for(Node n : nodes.keySet()) {
 				if(theBox.intersects(nodes.get(n))) n.setSelected(true);
